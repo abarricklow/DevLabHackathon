@@ -3,6 +3,8 @@ import InputForm from '../components/InputForm'
 import StrategyResults from '../components/StrategyResults'
 import CropTable from '../components/CropTable'
 
+//hi
+
 export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
