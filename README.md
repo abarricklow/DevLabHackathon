@@ -56,19 +56,33 @@ Runs at  `http://localhost:5713`
 
 ## Project Structure
 DevLabHackathon/
+
 ├── AquaFindNM-frontend/
+
 │   ├── src/
+
 │   │   ├── components/
-│   │   │   ├── InputForm.jsx        # 4 farmer inputs
-│   │   │   ├── StrategyResults.jsx  # ranked strategy cards
-│   │   │   ├── IncomeChart.jsx      # recharts bar chart
-│   │   │   ├── CropTable.jsx        # acreage adjustment table
-│   │   │   ├── SeverityBanner.jsx   # drought severity indicator
-│   │   │   └── FadeIn.jsx           # animation wrapper
+
+│   │   │   ├── InputForm.jsx 
+
+│   │   │   ├── StrategyResults.jsx 
+
+│   │   │   ├── IncomeChart.jsx      
+
+│   │   │   ├── CropTable.jsx        
+
+│   │   │   ├── SeverityBanner.jsx
+
+│   │   │   └── FadeIn.jsx
+
 │   │   ├── pages/
-│   │   │   └── Home.jsx             # main layout
+
+│   │   │   └── Home.jsx   
+
 │   │   └── services/
-│   │       └── api.js               # FastAPI connection
+
+│   │       └── api.js 
+
 │   └── index.html
 
 ---
