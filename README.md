@@ -32,7 +32,7 @@ how yall doing...
 
 ### Environment Variables
 
-Create a `.env` file in the frontend directory:
+Create a `.venv` file in the project directory:
 
 ### Frontend
 ```bash
