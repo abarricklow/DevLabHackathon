@@ -128,7 +128,7 @@ function ShadowPriceCallout({ shadowPrice, buyRecommendation }) {
     >
       <div className="flex items-center mb-1">
         <h4 className="font-semibold" style={{ color: 'var(--green-2)' }}>
-          💧 Should You Buy Water?
+           Should You Buy Water?
         </h4>
         <Tooltip text="The shadow price is the maximum you should pay per acre-foot of water before it becomes cheaper to fallow that crop instead." />
       </div>

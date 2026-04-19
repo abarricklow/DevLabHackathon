@@ -66,7 +66,6 @@ function IncomeGapCallout({ data, recommended }) {
 
   return (
     <div className="mt-4 rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-start gap-3">
-      <span className="text-2xl">📊</span>
       <div>
         <div className="flex items-center">
           <p className="text-sm font-semibold text-indigo-800">
