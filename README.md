@@ -1,15 +1,22 @@
 # Water Optix
-Created by ***Allison Barricklow, Hailey Hudson,*** and ***Shokhina Jalilova*** for the ***Desert Dev Lab Hackathon***
+A decision-support tool that helps farmers and water managers identify the lowest-cost strategies for adapting to water shortages in the Rio Grande Basin. Created by ***Allison Barricklow, Hailey Hudson,*** and ***Shokhina Jalilova***, Built at DesertDevLab Hackathon — 04/18-19/2026.
 
 ## Problem Statement
 heyy....
 
-## Tech Stack
-Frontend:
-- React
-- Tailwind CSS
-- JavaScript XML (.jsx)
+## Solution
+hey...
 
-Backend:
-- Python
+## Research Behind It
+how yall doing...
+
+## Tech Stack
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React + Vite |
+| Styling | Tailwind CSS |
+| Charts | Recharts |
+| Icons | Lucide React |
+| Backend | Python + FastAPI |
+| Data | Ward et al. 2025 scenario tables |
   
