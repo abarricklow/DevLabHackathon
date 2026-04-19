@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const CROPS = ['pecan', 'alfalfa', 'corn', 'wheat', 'peppers', 'cotton', 'onions', 'beans']
+const CROPS = ['pecan', 'alfalfa', 'corn', 'wheat', 'peppers', 'cotton', 'onions']
 const DISTRICTS = ['EBID (Dona Ana / Sierra County)', 'MRGCD (Bernalillo / Socorro County)']
 const TRADING_OPTIONS = [
   { value: 'interdistrict', label: 'Full trading — can buy/sell across districts' },
@@ -30,7 +30,13 @@ export default function InputForm({ onSubmit }) {
       <div>
         <label className="block font-semibold mb-1">Your Irrigation District</label>
         <select
-          className="w-full border rounded p-2"
+          className="w-full p-2 text-sm outline-none transition-all"
+          style={{
+            border: '1px solid var(--cream-2)',
+            borderRadius: '8px',
+            backgroundColor: 'var(--cream)',
+            color: 'var(--text-dark)',
+          }}
           value={district}
           onChange={e => setDistrict(e.target.value)}
           required
@@ -42,17 +48,29 @@ export default function InputForm({ onSubmit }) {
 
       {/* Shortage slider */}
       <div>
-        <label className="block font-semibold mb-1">
-          Expected Water Shortage: <span className="text-blue-600">{shortage}%</span>
+        <label
+          className="block font-semibold mb-1 text-sm"
+          style={{ color: 'var(--text-dark)' }}
+          >
+          Expected Water Shortage:{' '}
+          <span className="font-bold" style={{ color: 'var(--green-1)' }}>
+            {shortage}%
+          </span>
         </label>
+
         <input
           type="range" min={0} max={60} step={5}
           value={shortage}
           onChange={e => setShortage(Number(e.target.value))}
-          className="w-full"
+          className="w-full mt-1 mb-2 cursor-pointer accent-[#00704A]"
         />
-        <div className="flex justify-between text-sm text-gray-400">
-          <span>0% (normal)</span><span>60% (severe)</span>
+
+        <div
+          className="flex justify-between text-xs"
+          style={{ color: 'var(--text-light)' }}
+        >
+        <span>0% (normal)</span>
+        <span>60% (severe)</span>
         </div>
       </div>
 
@@ -85,7 +103,13 @@ export default function InputForm({ onSubmit }) {
                 type="number"
                 min={0}
                 placeholder="acres"
-                className="border rounded p-1 w-24 text-sm"
+                className="p-1 w-24 text-sm outline-none"
+                style={{
+                  border: '1px solid var(--cream-2)',
+                  borderRadius: '8px',
+                  backgroundColor: 'var(--cream)',
+                  color: 'var(--text-dark)',
+                }}
                 onChange={e => handleCropAcres(crop, e.target.value)}
               />
             </div>
@@ -95,7 +119,13 @@ export default function InputForm({ onSubmit }) {
 
       <button
         type="submit"
-        className="bg-blue-600 text-white rounded-lg py-2 font-semibold hover:bg-blue-700 transition"
+        className="w-full py-3 font-semibold text-white text-sm transition-all"
+        style={{
+        backgroundColor: 'var(--green-1)',
+        borderRadius: '50px',        // the signature Starbucks full pill
+        }}
+        onMouseOver={e => e.target.style.backgroundColor = 'var(--green-2)'}
+        onMouseOut={e => e.target.style.backgroundColor = 'var(--green-1)'}
       >
         Get Recommendations
       </button>

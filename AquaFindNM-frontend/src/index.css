@@ -1,1 +1,18 @@
 @import "tailwindcss";
+
+html, body {
+  overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+:root {
+  --green-1: #00704A;   /* primary — dark Starbucks green */
+  --green-2: #1E3932;   /* darkest — header background */
+  --green-3: #CBA258;   /* accent gold */
+  --green-4: #D4E9E2;   /* lightest green — hover states */
+  --cream:   #F2F0EB;   /* warm cream canvas */
+  --cream-2: #E8E4D9;   /* slightly darker cream for borders */
+  --text-dark: #1E3932;
+  --text-mid:  #4A4A4A;
+  --text-light: #767676;
+}

@@ -69,3 +69,47 @@ class RecommendationResponse(BaseModel):
     buy_vs_fallow: list[BuyVsFallowAnalysis]
     headline_recommendation: str
     data_source_note: str
+    
+# Add to models/schemas.py
+
+class DroughtStatus(BaseModel):
+    county: str
+    drought_category: str
+    suggested_shortage_pct: float
+    description: str
+    data_date: Optional[str]
+    source: str
+
+class LiveContext(BaseModel):
+    drought: DroughtStatus
+    prices: dict
+    et: dict
+    data_freshness_note: str
+
+# Update RecommendationRequest to add live data flag
+class RecommendationRequest(BaseModel):
+    county: County
+    crops: list[CropInput]
+    shortage_pct: float = Field(ge=0, le=60)
+    trading_institution: TradingInstitution
+    current_lease_price: Optional[float] = None
+    use_live_data: bool = Field(
+        default=False,
+        description="If True, fetches current ET from OpenET and prices from USDA NASS"
+    )
+
+# Add live data fields to RecommendationResponse
+class RecommendationResponse(BaseModel):
+    county: str
+    shortage_pct: float
+    trading_institution: str
+    total_baseline_income: float
+    estimated_income_loss: float
+    income_preservation_pct: float
+    crop_recommendations: list[CropRecommendation]
+    strategy_comparison: list[StrategyComparison]
+    buy_vs_fallow: list[BuyVsFallowAnalysis]
+    headline_recommendation: str
+    data_source_note: str
+    live_data_used: bool = False
+    live_context: Optional[dict] = None

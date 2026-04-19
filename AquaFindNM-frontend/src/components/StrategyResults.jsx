@@ -17,25 +17,22 @@ const STRATEGY_META = {
 
 function getColorScheme(rank) {
   if (rank === 1) return {
-    border: 'border-green-400',
-    bg: 'bg-green-50',
-    badge: 'bg-green-100 text-green-700',
-    bar: 'bg-green-400',
-    icon: 'text-green-500',
+    border: 'var(--green-1)',
+    badge: { backgroundColor: 'var(--green-4)', color: 'var(--green-2)' },
+    bar: 'var(--green-1)',
+    icon: 'var(--green-1)',
   }
   if (rank === 2) return {
-    border: 'border-yellow-400',
-    bg: 'bg-yellow-50',
-    badge: 'bg-yellow-100 text-yellow-700',
-    bar: 'bg-yellow-400',
-    icon: 'text-yellow-500',
+    border: '#CA8A04',
+    badge: { backgroundColor: '#FEF9C3', color: '#713F12' },
+    bar: '#FACC15',
+    icon: '#CA8A04',
   }
   return {
-    border: 'border-red-300',
-    bg: 'bg-red-50',
-    badge: 'bg-red-100 text-red-700',
-    bar: 'bg-red-300',
-    icon: 'text-red-400',
+    border: '#FCA5A5',
+    badge: { backgroundColor: '#FEE2E2', color: '#991B1B' },
+    bar: '#FCA5A5',
+    icon: '#EF4444',
   }
 }
 
@@ -50,15 +47,20 @@ function StrategyCard({ strategy, incomePct, rank, isRecommended }) {
   const colors = getColorScheme(rank)
 
   return (
-    <div className={`
-      relative rounded-xl border-2 p-5 transition-all
-      ${colors.border} ${colors.bg}
-      ${isRecommended ? 'shadow-lg scale-[1.02]' : 'shadow-sm'}
-    `}>
+    <div
+      className={`relative rounded-2xl border-2 p-5 transition-all ${isRecommended ? 'shadow-lg scale-[1.02]' : 'shadow-sm'}`}
+      style={{
+        borderColor: colors.border,
+        backgroundColor: 'var(--cream)',
+      }}
+    >
 
       {/* Recommended badge */}
       {isRecommended && (
-        <div className="absolute -top-3 left-4 flex items-center gap-1 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
+        <div
+          className="absolute -top-3 left-4 flex items-center gap-1 text-white text-xs font-bold px-3 py-1 rounded-full shadow"
+          style={{ backgroundColor: 'var(--green-1)' }}
+        >
           <Trophy size={12} />
           Best Option
         </div>
@@ -67,12 +69,20 @@ function StrategyCard({ strategy, incomePct, rank, isRecommended }) {
       {/* Header row */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${colors.badge}`}>
+          <span
+            className="text-xs font-semibold px-2 py-0.5 rounded-full"
+            style={colors.badge}
+          >
             #{rank} Strategy
           </span>
-          <h3 className="font-bold text-gray-800 mt-1 text-base">{meta.label}</h3>
+          <h3
+            className="font-bold mt-1 text-base"
+            style={{ color: 'var(--text-dark)' }}
+          >
+            {meta.label}
+          </h3>
         </div>
-        <div className={`${colors.icon} mt-1`}>
+        <div style={{ color: colors.icon }} className="mt-1">
           {getTrendIcon(rank)}
         </div>
       </div>
@@ -80,30 +90,51 @@ function StrategyCard({ strategy, incomePct, rank, isRecommended }) {
       {/* Income preserved bar */}
       <div className="mb-3">
         <div className="flex justify-between text-sm mb-1">
-          <span className="text-gray-500">Income Preserved</span>
-          <span className="font-bold text-gray-800">{incomePct}%</span>
+          <span style={{ color: 'var(--text-light)' }}>Income Preserved</span>
+          <span className="font-bold" style={{ color: 'var(--text-dark)' }}>
+            {incomePct}%
+          </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="w-full rounded-full h-2.5" style={{ backgroundColor: 'var(--cream-2)' }}>
           <div
-            className={`h-2.5 rounded-full transition-all duration-700 ${colors.bar}`}
-            style={{ width: `${incomePct}%` }}
+            className="h-2.5 rounded-full transition-all duration-700"
+            style={{
+              width: `${incomePct}%`,
+              backgroundColor: colors.bar,
+            }}
           />
         </div>
       </div>
 
       {/* Description */}
-      <p className="text-sm text-gray-600">{meta.description}</p>
+      <p className="text-sm" style={{ color: 'var(--text-mid)' }}>
+        {meta.description}
+      </p>
     </div>
   )
 }
 
 function ShadowPriceCallout({ shadowPrice, buyRecommendation }) {
   return (
-    <div className="mt-6 rounded-xl border border-blue-200 bg-blue-50 p-4">
-      <h4 className="font-semibold text-blue-800 mb-1">💧 Should You Buy Water?</h4>
-      <p className="text-sm text-blue-700">{buyRecommendation}</p>
-      <p className="text-xs text-blue-400 mt-1">
-        Shadow price of water: <span className="font-mono font-semibold">${shadowPrice}/acre-ft</span>
+    <div
+      className="mt-6 rounded-xl p-4"
+      style={{
+        backgroundColor: 'var(--green-4)',
+        border: '1px solid var(--green-1)',
+      }}
+    >
+      <h4
+        className="font-semibold mb-1"
+        style={{ color: 'var(--green-2)' }}
+      >
+         Should You Buy Water?
+      </h4>
+      <p className="text-sm" style={{ color: 'var(--green-1)' }}>
+        {buyRecommendation}
+      </p>
+      <p className="text-xs mt-1" style={{ color: 'var(--green-1)', opacity: 0.7 }}>
+        Shadow price of water:{' '}
+        <span className="font-mono font-semibold">${shadowPrice}/acre-ft</span>
       </p>
     </div>
   )
@@ -114,7 +145,6 @@ export default function StrategyResults({ results }) {
 
   const { recommended_strategy, income_preserved, shadow_price, buy_water_recommendation } = results
 
-  // Sort strategies by income preserved, highest first
   const ranked = Object.entries(income_preserved)
     .sort((a, b) => b[1] - a[1])
     .map(([strategy, pct], index) => ({
@@ -126,8 +156,16 @@ export default function StrategyResults({ results }) {
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">Recommended Strategies</h2>
-      <p className="text-sm text-gray-400 mb-5">
+      <h2
+        className="text-xl font-bold mb-1"
+        style={{ color: 'var(--text-dark)' }}
+      >
+        Recommended Strategies
+      </h2>
+      <p
+        className="text-sm mb-5"
+        style={{ color: 'var(--text-light)' }}
+      >
         Ranked by income preserved under your shortage scenario
       </p>
 
