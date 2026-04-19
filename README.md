@@ -58,7 +58,7 @@ Runs at  `http://localhost:5713`
 DevLabHackathon/  
 ├──AquaFindNM-frontend/  
 │   ├── src/  
-│   │   ├── components/
+│   │   ├── components/  
 │   │   │   ├── InputForm.jsx  
 │   │   │   ├── StrategyResults.jsx  
 │   │   │   ├── IncomeChart.jsx  
