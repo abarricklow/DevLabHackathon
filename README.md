@@ -47,40 +47,6 @@ Shadow prices, income preservation percentages, and crop acreage adjustments
 surfaced in the UI are derived directly from the paper's optimization results
 across five years of observed data (2017–2021).
 
----
-
-## Running Locally
-
-### Prerequisites
-- Node.js 18+
-- Python 3.11+
-
-### Frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Runs at `http://localhost:5173`
-
-### Backend
-
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-Runs at `http://localhost:8000`
-
-### Environment Variables
-
-Create a `.env` file in the frontend directory:
-
----
-
 ## Tech Stack
 | Layer | Technology |
 |-------|-----------|
