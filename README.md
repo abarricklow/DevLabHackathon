@@ -50,7 +50,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-Runs at  `http://localhost:5713`
+Runs at  `http://localhost8000`
 
 ---
 
