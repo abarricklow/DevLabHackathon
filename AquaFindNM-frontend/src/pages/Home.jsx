@@ -2,15 +2,20 @@ import { useState } from 'react'
 import InputForm from '../components/InputForm'
 import StrategyResults from '../components/StrategyResults'
 import CropTable from '../components/CropTable'
+import IncomeChart from '../components/IncomeChart'
+import FadeIn from '../components/FadeIn'
+import SeverityBanner from '../components/SeverityBanner'
 
 export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [userCrops, setUserCrops] = useState({})
+  const [shortage, setShortage] = useState(null)   // ← new
 
   const handleSubmit = async (farmData) => {
     setLoading(true)
     setUserCrops(farmData.crops)
+    setShortage(farmData.shortage)                 // ← new
     try {
       const data = {
         recommended_strategy: "interdistrict",
@@ -43,29 +48,63 @@ export default function Home() {
     }
   }
 
+  // ← new: reset handler used by the Start Over button
+  const handleReset = () => {
+    setResults(null)
+    setUserCrops({})
+    setShortage(null)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4">
-        <h1 className="text-2xl font-bold text-gray-800">Drought Adaptation Advisor</h1>
-        <p className="text-sm text-gray-400">
-          Enter your farm details to get ranked water shortage adaptation strategies
-        </p>
+      <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">🌾</span>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800 leading-tight">
+              Drought Adaptation Advisor
+            </h1>
+          </div>
+        </div>
+
+        {/* Status pill */}
+        <div className={`
+          text-xs font-semibold px-3 py-1.5 rounded-full
+          ${results
+            ? 'bg-green-100 text-green-700'
+            : 'bg-gray-100 text-gray-400'
+          }
+        `}>
+          {results ? '✓ Analysis Complete' : 'Awaiting Input'}
+        </div>
       </div>
 
-      {/* Main two-column layout */}
+      {/* Two column layout */}
       <div className="flex h-[calc(100vh-73px)]">
 
-        {/* Left column — input form, fixed width, scrollable */}
+        {/* ---- LEFT COLUMN ---- */}
         <div className="w-[420px] shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-6">
+
+          {/* Suggestion 6 — form section label */}
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">
+              Step 1
+            </p>
+            <h2 className="text-base font-bold text-gray-700">Enter Your Farm Details</h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              All fields help improve recommendation accuracy
+            </p>
+          </div>
+
           <InputForm onSubmit={handleSubmit} />
         </div>
 
-        {/* Right column — results, fills remaining space, scrollable */}
+        {/* ---- RIGHT COLUMN ---- */}
         <div className="flex-1 overflow-y-auto p-8">
 
-          {/* Empty state — before any submission */}
+          {/* Empty state */}
           {!results && !loading && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-6xl mb-4">🌾</div>
@@ -92,8 +131,28 @@ export default function Home() {
           {/* Results */}
           {results && !loading && (
             <div className="max-w-2xl">
-              <StrategyResults results={results} />
-              <CropTable results={results} userCrops={userCrops} />
+
+              {/* Suggestion 5 — severity banner + reset button sit together at the top */}
+              <div className="flex items-start justify-between mb-2">
+                <SeverityBanner shortage={shortage} />
+                <button
+                  onClick={handleReset}
+                  className="text-xs text-gray-400 hover:text-gray-600 underline shrink-0 ml-4 mt-1"
+                >
+                  ↺ Start over
+                </button>
+              </div>
+
+              <FadeIn delay={0}>
+                <StrategyResults results={results} />
+              </FadeIn>
+              <FadeIn delay={150}>
+                <IncomeChart results={results} />
+              </FadeIn>
+              <FadeIn delay={300}>
+                <CropTable results={results} userCrops={userCrops} />
+              </FadeIn>
+
             </div>
           )}
 

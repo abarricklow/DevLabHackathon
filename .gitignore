@@ -30,3 +30,4 @@ env/
 
 #Python/Backend
 __pycache__/
+*.pyc
