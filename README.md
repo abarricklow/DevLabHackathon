@@ -55,6 +55,7 @@ Runs at  `http://localhost:8000`
 ---
 
 ## Project Structure
+<pre>
 DevLabHackathon/  
 ├──AquaFindNM-frontend/  
 │   ├── src/  
@@ -70,7 +71,7 @@ DevLabHackathon/
 │   │   └── services/  
 │   │       └── api.js  
 │   └── index.html  
-
+</pre>
 ---
 
 ## Team
