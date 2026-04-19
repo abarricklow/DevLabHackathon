@@ -1,5 +1,5 @@
 # Water Optix
-Created by ***Allison Barricklow, Hailey Hudson, Shokhina Jalilova*** for the ***Desert Dev Lab Hackathon***
+Created by ***Allison Barricklow, Hailey Hudson,*** and ***Shokhina Jalilova*** for the ***Desert Dev Lab Hackathon***
 
 ## Problem Statement
 heyy....
