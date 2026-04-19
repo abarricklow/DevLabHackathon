@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const CROPS = ['pecan', 'alfalfa', 'corn', 'wheat', 'peppers', 'cotton', 'onions', 'beans']
+const CROPS = ['pecan', 'alfalfa', 'corn', 'wheat', 'peppers', 'cotton', 'onions']
 const DISTRICTS = ['EBID (Dona Ana / Sierra County)', 'MRGCD (Bernalillo / Socorro County)']
 const TRADING_OPTIONS = [
   { value: 'interdistrict', label: 'Full trading — can buy/sell across districts' },

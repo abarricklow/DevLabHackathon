@@ -35,7 +35,6 @@ export default function Home() {
           { crop: "peppers", acreage_pct: 0.924 },
           { crop: "cotton",  acreage_pct: 0.464 },
           { crop: "onions",  acreage_pct: 0.977 },
-          { crop: "beans",   acreage_pct: 0.609 },
         ]
       }
       // const data = await getRecommendation(farmData)
