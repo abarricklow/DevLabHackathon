@@ -158,13 +158,13 @@ export default function Home() {
                 </button>
               </div>
               <FadeIn delay={0}>
-                <StrategyResults results={results} />
+                <CropTable results={results} />
               </FadeIn>
               <FadeIn delay={150}>
-                <IncomeChart results={results} />
+                <StrategyResults results={results} />
               </FadeIn>
               <FadeIn delay={300}>
-                <CropTable results={results} />
+                <IncomeChart results={results} />
               </FadeIn>
             </div>
           )}
