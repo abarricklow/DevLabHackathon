@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getRecommendation } from '../services/api'    // make sure this path matches yours
 import InputForm from '../components/InputForm'
 import StrategyResults from '../components/StrategyResults'
 import CropTable from '../components/CropTable'
@@ -9,38 +10,22 @@ import SeverityBanner from '../components/SeverityBanner'
 export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [userCrops, setUserCrops] = useState({})
+  const [error, setError] = useState(null)
   const [shortage, setShortage] = useState(null)
 
   const handleSubmit = async (farmData) => {
     setLoading(true)
-    setUserCrops(farmData.crops)
-    setShortage(farmData.shortage)
+    setError(null)
+    setShortage(farmData.shortage_pct)
+
     try {
-      const data = {
-        recommended_strategy: "interdistrict",
-        income_preserved: {
-          interdistrict: 92,
-          intradistrict: 87,
-          no_trade: 70
-        },
-        shadow_price: 58.14,
-        buy_water_recommendation:
-          "Buying water is worth it if you can source it under $58/acre-ft. Above that price, fallowing your lowest-value crops is the cheaper option.",
-        crop_adjustments: [
-          { crop: "pecan",   acreage_pct: 0.878 },
-          { crop: "alfalfa", acreage_pct: 0.617 },
-          { crop: "corn",    acreage_pct: 0.582 },
-          { crop: "wheat",   acreage_pct: 0.000 },
-          { crop: "peppers", acreage_pct: 0.924 },
-          { crop: "cotton",  acreage_pct: 0.464 },
-          { crop: "onions",  acreage_pct: 0.977 },
-        ]
-      }
-      // const data = await getRecommendation(farmData)
+      // farmData is already in the exact shape the backend expects
+      // because InputForm now formats it correctly before calling onSubmit
+      const data = await getRecommendation(farmData)
       setResults(data)
     } catch (err) {
-      console.error(err)
+      console.error('API error:', err)
+      setError('Could not get recommendations. Make sure the backend is running.')
     } finally {
       setLoading(false)
     }
@@ -48,14 +33,14 @@ export default function Home() {
 
   const handleReset = () => {
     setResults(null)
-    setUserCrops({})
+    setError(null)
     setShortage(null)
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--cream)' }}>
 
-      {/* Header — dark green Starbucks bar */}
+      {/* Header */}
       <div
         className="px-8 py-4 flex items-center justify-between"
         style={{ backgroundColor: 'var(--green-2)' }}
@@ -69,7 +54,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Status pill */}
         <div
           className="text-xs font-semibold px-4 py-2 rounded-full transition-all"
           style={{
@@ -84,7 +68,7 @@ export default function Home() {
       {/* Two column layout */}
       <div className="flex h-[calc(100vh-73px)]">
 
-        {/* Left column — slightly darker cream panel */}
+        {/* Left column */}
         <div
           className="w-[420px] shrink-0 overflow-y-auto p-6"
           style={{
@@ -92,7 +76,6 @@ export default function Home() {
             borderRight: '1px solid var(--cream-2)',
           }}
         >
-          {/* Form section label */}
           <div className="mb-5">
             <p
               className="text-xs font-semibold uppercase tracking-widest mb-1"
@@ -111,11 +94,11 @@ export default function Home() {
           <InputForm onSubmit={handleSubmit} />
         </div>
 
-        {/* Right column — cream canvas */}
+        {/* Right column */}
         <div className="flex-1 overflow-y-auto p-8">
 
           {/* Empty state */}
-          {!results && !loading && (
+          {!results && !loading && !error && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-6xl mb-4">🌿</div>
               <h2
@@ -144,6 +127,21 @@ export default function Home() {
             </div>
           )}
 
+          {/* Error state */}
+          {error && !loading && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-5xl mb-4">⚠️</div>
+              <p className="text-sm text-red-500 max-w-sm">{error}</p>
+              <button
+                onClick={handleReset}
+                className="mt-4 text-xs underline"
+                style={{ color: 'var(--text-light)' }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
           {/* Results */}
           {results && !loading && (
             <div className="max-w-2xl">
@@ -166,7 +164,7 @@ export default function Home() {
                 <IncomeChart results={results} />
               </FadeIn>
               <FadeIn delay={300}>
-                <CropTable results={results} userCrops={userCrops} />
+                <CropTable results={results} />
               </FadeIn>
             </div>
           )}

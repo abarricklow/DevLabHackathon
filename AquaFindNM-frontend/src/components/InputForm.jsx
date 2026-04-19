@@ -1,15 +1,25 @@
 import { useState } from 'react'
 
 const CROPS = ['pecan', 'alfalfa', 'corn', 'wheat', 'peppers', 'cotton', 'onions']
-const DISTRICTS = ['EBID (Dona Ana / Sierra County)', 'MRGCD (Bernalillo / Socorro County)']
+
+// Display name → backend value mapping
+const COUNTIES = [
+  { label: 'Doña Ana',   value: 'dona_ana' },
+  { label: 'Sierra',     value: 'sierra' },
+  { label: 'Socorro',    value: 'socorro' },
+  { label: 'Valencia',   value: 'valencia' },
+  { label: 'Bernalillo', value: 'bernalillo' },
+  { label: 'Sandoval',   value: 'sandoval' },
+]
+
 const TRADING_OPTIONS = [
-  { value: 'interdistrict', label: 'Full trading — can buy/sell across districts' },
-  { value: 'intradistrict', label: 'Limited trading — within my district only' },
-  { value: 'no_trade', label: 'No trading — proportional shortage sharing' },
+  { value: 'unlimited', label: 'Full trading — can buy/sell across districts' },
+  { value: 'limited',   label: 'Limited trading — within my district only' },
+  { value: 'none',      label: 'No trading — proportional shortage sharing' },
 ]
 
 export default function InputForm({ onSubmit }) {
-  const [district, setDistrict] = useState('')
+  const [county, setCounty] = useState('')
   const [shortage, setShortage] = useState(25)
   const [trading, setTrading] = useState('')
   const [crops, setCrops] = useState({})
@@ -20,13 +30,33 @@ export default function InputForm({ onSubmit }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    onSubmit({ district, shortage, trading, crops })
+
+    // Convert crops object to array, filtering out zeros and empty values
+    // {pecan: 500, wheat: 0} → [{crop: "pecan", acres: 500}]
+    const cropsArray = Object.entries(crops)
+      .filter(([_, acres]) => acres > 0)
+      .map(([crop, acres]) => ({ crop, acres }))
+
+    if (cropsArray.length === 0) {
+      alert('Please enter acreage for at least one crop.')
+      return
+    }
+
+    // This is the exact shape your backend /recommend endpoint expects
+    onSubmit({
+      county: county,
+      crops: cropsArray,
+      shortage_pct: shortage,
+      trading_institution: trading,
+      current_lease_price: null,   // null → backend uses literature default
+      use_live_data: false,
+    })
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6 p-6 bg-white rounded-xl shadow">
-      
-      {/* District */}
+
+      {/* County */}
       <div>
         <label className="block font-semibold mb-1">Your Irrigation District</label>
         <select
@@ -37,12 +67,14 @@ export default function InputForm({ onSubmit }) {
             backgroundColor: 'var(--cream)',
             color: 'var(--text-dark)',
           }}
-          value={district}
-          onChange={e => setDistrict(e.target.value)}
+          value={county}
+          onChange={e => setCounty(e.target.value)}
           required
         >
           <option value="">Select district...</option>
-          {DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+          {COUNTIES.map(c => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
         </select>
       </div>
 
@@ -51,7 +83,7 @@ export default function InputForm({ onSubmit }) {
         <label
           className="block font-semibold mb-1 text-sm"
           style={{ color: 'var(--text-dark)' }}
-          >
+        >
           Expected Water Shortage:{' '}
           <span className="font-bold" style={{ color: 'var(--green-1)' }}>
             {shortage}%
@@ -69,8 +101,8 @@ export default function InputForm({ onSubmit }) {
           className="flex justify-between text-xs"
           style={{ color: 'var(--text-light)' }}
         >
-        <span>0% (normal)</span>
-        <span>60% (severe)</span>
+          <span>0% (normal)</span>
+          <span>60% (severe)</span>
         </div>
       </div>
 
@@ -78,7 +110,7 @@ export default function InputForm({ onSubmit }) {
       <div>
         <label className="block font-semibold mb-1">Water Trading Access</label>
         {TRADING_OPTIONS.map(opt => (
-          <label key={opt.value} className="flex items-center gap-2 mb-1">
+          <label key={opt.value} className="flex items-center gap-2 mb-1 text-sm cursor-pointer">
             <input
               type="radio"
               name="trading"
@@ -121,14 +153,14 @@ export default function InputForm({ onSubmit }) {
         type="submit"
         className="w-full py-3 font-semibold text-white text-sm transition-all"
         style={{
-        backgroundColor: 'var(--green-1)',
-        borderRadius: '50px',        // the signature Starbucks full pill
+          backgroundColor: 'var(--green-1)',
+          borderRadius: '50px',
         }}
         onMouseOver={e => e.target.style.backgroundColor = 'var(--green-2)'}
         onMouseOut={e => e.target.style.backgroundColor = 'var(--green-1)'}
       >
         Get Recommendations
       </button>
-    </form> 
+    </form>
   )
 }
