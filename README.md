@@ -22,7 +22,7 @@ how yall doing...
 | Backend | Python + FastAPI |
 | Data | Ward et al. 2025 scenario tables |
 
---
+---
 
 ## Run it Locally
 
@@ -55,7 +55,21 @@ Runs at  `http://localhost:5713`
 ---
 
 ## Project Structure
-idk
+DevLabHackathon/
+├── AquaFindNM-frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── InputForm.jsx        # 4 farmer inputs
+│   │   │   ├── StrategyResults.jsx  # ranked strategy cards
+│   │   │   ├── IncomeChart.jsx      # recharts bar chart
+│   │   │   ├── CropTable.jsx        # acreage adjustment table
+│   │   │   ├── SeverityBanner.jsx   # drought severity indicator
+│   │   │   └── FadeIn.jsx           # animation wrapper
+│   │   ├── pages/
+│   │   │   └── Home.jsx             # main layout
+│   │   └── services/
+│   │       └── api.js               # FastAPI connection
+│   └── index.html
 
 ---
 
