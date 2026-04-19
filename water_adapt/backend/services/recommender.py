@@ -70,7 +70,6 @@ CROP_VULNERABILITY_BEYOND_25PCT = {
     "onions":  0.65,  # high value, well protected
 }
 
-
 def interpolate_retention(
     crop: str,
     institution: str,
@@ -80,55 +79,77 @@ def interpolate_retention(
     """
     Computes land retention fraction for any shortage level.
 
-    Three zones:
-    1. 0% to 25%: linear interpolation from 1.0 to paper value
-    2. Above 25%: crop-specific extrapolation using vulnerability multipliers
-    3. Any institution "none": always exactly (1 - shortage_pct/100)
-       because proportional sharing means everyone takes the same cut
+    Anchor points:
+    - 0% shortage  → retention = 1.0 (no shortage, full acreage)
+    - 25% shortage → paper values from Ward et al.
+    - 60% shortage → estimated using crop vulnerability multipliers
 
-    Args:
-        crop: crop name matching scenarios.py keys
-        institution: "unlimited", "limited", or "none"
-        county: county name matching scenarios.py keys
-        shortage_pct: water shortage as percentage of normal supply
-
-    Returns:
-        float between 0.0 and 1.0 representing fraction of acres retained
+    For proportional sharing (institution="none"), the answer is always
+    exactly (1 - shortage_pct/100) because every crop takes the same cut.
     """
     if shortage_pct <= 0:
         return 1.0
 
-    # Proportional sharing is always exact — everyone takes the same cut
-    # regardless of crop value. This is the definition of "none" institution.
+    # Proportional sharing: everyone takes exactly the shortage cut
     if institution == "none":
         return max(0.0, 1.0 - (shortage_pct / 100.0))
 
     paper_retention = LAND_RETENTION_DROUGHT_25PCT[institution][crop][county]
 
     if shortage_pct <= PAPER_SHORTAGE_PCT:
-        # Zone 1: linear interpolation between 0 and 25%
-        # At 0% shortage: retention = 1.0
-        # At 25% shortage: retention = paper_retention
+        # Zone 1: linear interpolation between 0% and 25% shortage
+        # At 0%:  retention = 1.0
+        # At 25%: retention = paper_retention
         ratio = shortage_pct / PAPER_SHORTAGE_PCT
         retention = 1.0 + ratio * (paper_retention - 1.0)
+        return max(0.0, min(1.0, retention))
 
     else:
-        # Zone 2: extrapolation beyond 25%
-        # Start from the paper value at 25% and apply crop-specific decline rate
-        # The decline beyond 25% is faster for low-value crops
-        excess_shortage = shortage_pct - PAPER_SHORTAGE_PCT
+        # Zone 2: extrapolation beyond 25% shortage
+        #
+        # The key insight: we know two points on the curve:
+        #   point A: (0%, 1.0)
+        #   point B: (25%, paper_retention)
+        #
+        # The slope from A to B tells us how fast retention falls per
+        # percentage point of shortage in the linear zone.
+        # slope = (paper_retention - 1.0) / 25
+        #
+        # Beyond 25%, we apply a crop-specific multiplier to this slope.
+        # Vulnerable crops (wheat) fall faster, protected crops (pecans) slower.
+        # But we cap the acceleration so high-value crops never
+        # collapse to near zero at moderate shortage levels.
+        #
+        # Example: pecans at 60% shortage under unlimited trading
+        #   slope = (0.806 - 1.0) / 25 = -0.00776 per pct point
+        #   vulnerability = 0.7 (slower than linear)
+        #   adjusted_slope = -0.00776 * 0.7 = -0.00543
+        #   retention = 0.806 + (35 * -0.00543) = 0.806 - 0.190 = 0.616
+        #   → 61.6% retention at 60% shortage for Bernalillo pecans
+        #   This makes sense: high-value crop, most water protected
+
+        slope_to_25 = (paper_retention - 1.0) / PAPER_SHORTAGE_PCT
         vulnerability = CROP_VULNERABILITY_BEYOND_25PCT.get(crop, 1.0)
+        adjusted_slope = slope_to_25 * vulnerability
+        excess = shortage_pct - PAPER_SHORTAGE_PCT
+        retention = paper_retention + (excess * adjusted_slope)
 
-        # Each additional 1% shortage beyond 25% reduces retention by
-        # (paper_retention / 25) * vulnerability
-        # This means crops that were already near zero at 25% hit zero
-        # quickly, while high-value crops decline slowly
-        decline_per_pct = (paper_retention / PAPER_SHORTAGE_PCT) * vulnerability
-        retention = paper_retention - (excess_shortage * decline_per_pct)
+        # Hard floors: high-value crops should never fully collapse
+        # under market trading even at extreme shortages
+        if institution in ["unlimited", "limited"]:
+            floors = {
+                "pecan":   0.40,
+                "peppers": 0.50,
+                "onions":  0.45,
+                "alfalfa": 0.20,
+                "corn":    0.10,
+                "wheat":   0.00,
+                "cotton":  0.00,
+            }
+            floor = floors.get(crop, 0.05)
+            retention = max(retention, floor)
 
-    return max(0.0, min(1.0, retention))
-
-
+        return max(0.0, min(1.0, retention))
 def interpolate_shadow_price(
     crop: str,
     institution: str,
@@ -139,37 +160,37 @@ def interpolate_shadow_price(
     Computes shadow price ($/acre-ft) for any shortage level.
 
     Shadow prices:
-    - Are zero when there is no shortage (water is not scarce)
-    - Increase as shortage worsens (water becomes more valuable)
+    - Are zero at zero shortage
+    - Scale with shortage severity  
     - Under unlimited trading, equalize across all crops/counties
-    - Under no trading, vary wildly by crop (low for wheat, high for onions)
+    - Under no trading, reflect crop-specific water value
 
-    The relationship is roughly linear but accelerates at severe shortages.
-    We use a quadratic adjustment beyond 25% to capture this.
-
-    Args:
-        crop: crop name
-        institution: trading institution
-        county: county name
-        shortage_pct: water shortage percentage
-
-    Returns:
-        float shadow price in $/acre-ft
+    We use a slightly superlinear relationship beyond 25% because
+    water scarcity effects accelerate as shortage worsens.
     """
     if shortage_pct <= 0:
         return 0.0
 
     paper_shadow = SHADOW_PRICES_DROUGHT_25PCT[institution][crop][county]
-    ratio = shortage_pct / PAPER_SHORTAGE_PCT
 
     if shortage_pct <= PAPER_SHORTAGE_PCT:
-        # Linear scaling from 0 to paper value
+        # Linear scale from 0 to paper value
+        ratio = shortage_pct / PAPER_SHORTAGE_PCT
         return round(paper_shadow * ratio, 2)
-    else:
-        # Beyond 25%, shadow prices accelerate (water scarcity is nonlinear)
-        # Use ratio^1.3 to capture this acceleration
-        return round(paper_shadow * (ratio ** 1.3), 2)
 
+    else:
+        # Beyond 25%: superlinear growth
+        # At 25%: shadow_price = paper_shadow
+        # The rate of increase accelerates with shortage severity
+        # We use ratio^1.2 (mild acceleration) instead of ratio^1.3
+        # to avoid unrealistically high values
+        ratio = shortage_pct / PAPER_SHORTAGE_PCT
+        shadow = paper_shadow * (ratio ** 1.2)
+
+        # Cap shadow prices at reasonable maximums
+        # Even in extreme drought, water values don't exceed ~$800/acre-ft
+        # for agricultural use (it becomes cheaper to buy food imports)
+        return round(min(shadow, 800.0), 2)
 
 # ─────────────────────────────────────────────────────────────
 # STRATEGY RANKER
@@ -459,10 +480,18 @@ def calculate_buy_vs_fallow(
         recommendation = "borderline"
 
     explanation = _build_buy_fallow_explanation(
-        crop, shadow_price, current_lease_price, breakeven_price,
-        optimal_acres_to_buy, acres_at_risk, optimal_cost,
-        optimal_income_preserved, optimal_net_benefit, recommendation
-    )
+    crop=crop,
+    county=county,
+    shadow_price=shadow_price,
+    lease_price=current_lease_price,
+    breakeven_price=breakeven_price,
+    optimal_acres=optimal_acres_to_buy,
+    total_at_risk_acres=acres_at_risk,
+    cost=optimal_cost,
+    income_preserved=optimal_income_preserved,
+    net_benefit=optimal_net_benefit,
+    recommendation=recommendation,
+)
 
     return BuyVsFallowAnalysis(
         crop=crop,
@@ -481,6 +510,7 @@ def calculate_buy_vs_fallow(
 
 def _build_buy_fallow_explanation(
     crop: str,
+    county: str,          # ADD this parameter
     shadow_price: float,
     lease_price: float,
     breakeven_price: float,
@@ -491,7 +521,8 @@ def _build_buy_fallow_explanation(
     net_benefit: float,
     recommendation: str,
 ) -> str:
-    """Builds plain-English explanation for buy vs fallow decision."""
+    et_feet = WATER_DEPTH_FT[crop][county]  # use actual county, not hardcoded
+    water_volume = optimal_acres * et_feet
 
     if recommendation == "maintain":
         return f"{crop.capitalize()} is maintaining near-full acreage. No water purchase needed."
@@ -499,9 +530,8 @@ def _build_buy_fallow_explanation(
     if recommendation == "buy_water":
         return (
             f"Buying water for {optimal_acres:.0f} acres of {crop} "
-            f"costs ${cost:,.0f} ({optimal_acres * WATER_DEPTH_FT.get(crop, {}).get('dona_ana', 3):.0f} "
-            f"acre-ft × ${lease_price:.2f}/acre-ft) but preserves "
-            f"${income_preserved:,.0f} in income. "
+            f"costs ${cost:,.0f} ({water_volume:.0f} acre-ft × ${lease_price:.2f}/acre-ft) "
+            f"but preserves ${income_preserved:,.0f} in income. "
             f"Net benefit: ${net_benefit:,.0f}. "
             f"Buying remains profitable as long as lease prices stay below "
             f"${breakeven_price:.2f}/acre-ft."
@@ -512,21 +542,18 @@ def _build_buy_fallow_explanation(
         return (
             f"Buying water for {crop} is not justified at ${lease_price:.2f}/acre-ft. "
             f"Water costs ${lease_price:.2f}/acre-ft but only generates "
-            f"${(income_preserved / max(optimal_acres * WATER_DEPTH_FT.get(crop, {}).get('dona_ana', 3), 1)):.2f} "
-            f"in income per acre-ft. "
+            f"${(income_preserved / max(water_volume, 0.1)):.2f} "
+            f"in crop income per acre-ft. "
             f"Fallow {total_at_risk_acres:.0f} acres and save ${loss_from_buying:,.0f}. "
-            f"Buying would become profitable if lease prices fell below "
+            f"Buying becomes profitable if lease prices fall below "
             f"${breakeven_price:.2f}/acre-ft."
         )
 
-    # borderline
     return (
         f"The economics are close for {crop}. "
         f"Water is worth ${shadow_price:.2f}/acre-ft to this crop "
         f"vs ${lease_price:.2f}/acre-ft market lease. "
         f"Net benefit of buying: ${net_benefit:,.0f}. "
-        f"Consider your cash flow, whether water is available nearby, "
-        f"and whether prices might change. "
         f"Breakeven lease price: ${breakeven_price:.2f}/acre-ft."
     )
 
@@ -683,7 +710,10 @@ def generate_recommendation(req: RecommendationRequest) -> RecommendationRespons
     shortage_pct = req.shortage_pct
 
     # Determine lease price
-    lease_price = req.current_lease_price or WATER_LEASE_PRICE_RANGE["mid"]
+    if req.current_lease_price is not None and req.current_lease_price > 0:
+        lease_price = req.current_lease_price
+    else:
+        lease_price = WATER_LEASE_PRICE_RANGE["mid"]
 
     # Fetch live data if requested
     live_prices = None
