@@ -1,3 +1,12 @@
+<<<<<<< HEAD
+=======
+venv/
+__pycache__/
+*.pyc
+.env
+venv/
+
+>>>>>>> e28a3b859288e3ed06c72b6234b9b118e48e8aaf
 # Logs
 logs
 *.log
@@ -22,6 +31,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+<<<<<<< HEAD
 
 # virtual environments
 venv/
@@ -31,3 +41,5 @@ env/
 #Python/Backend
 __pycache__/
 *.pyc
+=======
+>>>>>>> e28a3b859288e3ed06c72b6234b9b118e48e8aaf
