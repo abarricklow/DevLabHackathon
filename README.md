@@ -77,7 +77,7 @@ DevLabHackathon/
 |------|------|
 | Hailey Hudson | Frontend |
 | Shokhina Jalilova | Backend/Data |
-| Allison Barricklow | Prodcut Management/Full Stack Ops |
+| Allison Barricklow | Product Management |
 
 ---
 
