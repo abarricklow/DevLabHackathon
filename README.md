@@ -2,7 +2,7 @@
 A decision-support tool that helps farmers and water managers identify the lowest-cost strategies for adapting to water shortages in the Rio Grande Basin. Created by ***Allison Barricklow, Hailey Hudson,*** and ***Shokhina Jalilova***, Built at DesertDevLab Hackathon — 04/18-19/2026.
 
 ## Problem Statement
-heyy....
+Farmers lack accessible tools to make economically optimal decisions about water use under scarcity, leading to inefficient allocation and avoidable financial losses.
 
 ## Solution
 hey...
@@ -60,17 +60,14 @@ DevLabHackathon/
 ├──AquaFindNM-frontend/  
 │   ├── src/  
 │   │   ├── components/  
-│   │   │   ├── InputForm.jsx  
-│   │   │   ├── StrategyResults.jsx  
-│   │   │   ├── IncomeChart.jsx  
-│   │   │   ├── CropTable.jsx  
-│   │   │   ├── SeverityBanner.jsx  
-│   │   │   └── FadeIn.jsx  
-│   │   ├── pages/  
-│   │   │   └── Home.jsx  
+│   │   ├── pages/   
 │   │   └── services/  
-│   │       └── api.js  
 │   └── index.html  
+├──water_adapt/backend/    
+│   ├── data/  
+│   ├── models/  
+│   ├── services/  
+│   └── main.py   
 </pre>
 ---
 
@@ -81,4 +78,12 @@ DevLabHackathon/
 | Hailey Hudson | Frontend |
 | Shokhina Jalilova | Backend/Data |
 | Allison Barricklow | Prodcut Management/Full Stack Ops |
+
+---
+
+## Acknowledgements
+
+Research foundation provided by **Dr. Frank A. Ward**, Professor at New Mexico
+State University, whose hydro-economic modeling of the Rio Grande Basin made
+this tool possible.
 
