@@ -55,11 +55,11 @@ Runs at  `http://localhost:5713`
 ---
 
 ## Project Structure
-ProjectRoot/
-├── src/
-│   └── main.py
-├── tests/
-└── README.md
+ProjectRoot/  
+├── src/  
+│   └── main.py  
+├── tests/  
+└── README.md  
 
 
 ---
