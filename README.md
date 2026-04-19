@@ -7,7 +7,7 @@ heyy....
 ## Solution
 hey...
 
-## Research Behind It
+## Research Behind it
 how yall doing...
 
 ## Tech Stack
@@ -19,4 +19,20 @@ how yall doing...
 | Icons | Lucide React |
 | Backend | Python + FastAPI |
 | Data | Ward et al. 2025 scenario tables |
+
+## Run it Locally
+
+### Prequisites
+- Node.js 18+
+- Python 3.11+
+
+### Frontend
+```bash
+cd AquaFindNM-frontend
+npm install
+npm run dev
+```
+
+Runs at `http://localhost:5173`
+
   
