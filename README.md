@@ -55,35 +55,7 @@ Runs at  `http://localhost:5713`
 ---
 
 ## Project Structure
-DevLabHackathon/
-
-├── AquaFindNM-frontend/
-
-│   ├── src/
-
-│   │   ├── components/
-
-│   │   │   ├── InputForm.jsx 
-
-│   │   │   ├── StrategyResults.jsx 
-
-│   │   │   ├── IncomeChart.jsx      
-
-│   │   │   ├── CropTable.jsx        
-
-│   │   │   ├── SeverityBanner.jsx
-
-│   │   │   └── FadeIn.jsx
-
-│   │   ├── pages/
-
-│   │   │   └── Home.jsx   
-
-│   │   └── services/
-
-│   │       └── api.js 
-
-│   └── index.html
+67
 
 ---
 
