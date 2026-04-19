@@ -10,6 +10,8 @@ hey...
 ## Research Behind it
 how yall doing...
 
+---
+
 ## Tech Stack
 | Layer | Technology |
 |-------|-----------|
@@ -19,6 +21,8 @@ how yall doing...
 | Icons | Lucide React |
 | Backend | Python + FastAPI |
 | Data | Ward et al. 2025 scenario tables |
+
+--
 
 ## Run it Locally
 
@@ -48,4 +52,18 @@ uvicorn main:app --reload
 
 Runs at  `http://localhost:5713`
 
-  
+---
+
+## Project Structure
+idk
+
+---
+
+## Team
+
+| Name | Role |
+|------|------|
+| Hailey Hudson | Frontend |
+| Shokhina Jalilova | Backend/Data |
+| Allison Barricklow | Prodcut Management/Full Stack Ops |
+
