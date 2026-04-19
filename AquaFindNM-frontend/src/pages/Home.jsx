@@ -10,12 +10,12 @@ export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [userCrops, setUserCrops] = useState({})
-  const [shortage, setShortage] = useState(null)   // ← new
+  const [shortage, setShortage] = useState(null)
 
   const handleSubmit = async (farmData) => {
     setLoading(true)
     setUserCrops(farmData.crops)
-    setShortage(farmData.shortage)                 // ← new
+    setShortage(farmData.shortage)
     try {
       const data = {
         recommended_strategy: "interdistrict",
@@ -38,7 +38,6 @@ export default function Home() {
           { crop: "beans",   acreage_pct: 0.609 },
         ]
       }
-
       // const data = await getRecommendation(farmData)
       setResults(data)
     } catch (err) {
@@ -48,7 +47,6 @@ export default function Home() {
     }
   }
 
-  // ← new: reset handler used by the Start Over button
   const handleReset = () => {
     setResults(null)
     setUserCrops({})
@@ -56,27 +54,30 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--cream)' }}>
 
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+      {/* Header — dark green Starbucks bar */}
+      <div
+        className="px-8 py-4 flex items-center justify-between"
+        style={{ backgroundColor: 'var(--green-2)' }}
+      >
         <div className="flex items-center gap-3">
           <span className="text-3xl">🌾</span>
           <div>
-            <h1 className="text-xl font-bold text-gray-800 leading-tight">
-              Drought Adaptation Advisor
+            <h1 className="text-xl font-bold leading-tight text-white">
+              WaterOptix
             </h1>
           </div>
         </div>
 
         {/* Status pill */}
-        <div className={`
-          text-xs font-semibold px-3 py-1.5 rounded-full
-          ${results
-            ? 'bg-green-100 text-green-700'
-            : 'bg-gray-100 text-gray-400'
-          }
-        `}>
+        <div
+          className="text-xs font-semibold px-4 py-2 rounded-full transition-all"
+          style={{
+            backgroundColor: results ? 'var(--green-1)' : 'rgba(255,255,255,0.1)',
+            color: results ? 'white' : 'var(--green-4)',
+          }}
+        >
           {results ? '✓ Analysis Complete' : 'Awaiting Input'}
         </div>
       </div>
@@ -84,16 +85,26 @@ export default function Home() {
       {/* Two column layout */}
       <div className="flex h-[calc(100vh-73px)]">
 
-        {/* ---- LEFT COLUMN ---- */}
-        <div className="w-[420px] shrink-0 border-r border-gray-200 bg-white overflow-y-auto p-6">
-
-          {/* Suggestion 6 — form section label */}
+        {/* Left column — slightly darker cream panel */}
+        <div
+          className="w-[420px] shrink-0 overflow-y-auto p-6"
+          style={{
+            backgroundColor: 'white',
+            borderRight: '1px solid var(--cream-2)',
+          }}
+        >
+          {/* Form section label */}
           <div className="mb-5">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">
+            <p
+              className="text-xs font-semibold uppercase tracking-widest mb-1"
+              style={{ color: 'var(--green-1)' }}
+            >
               Step 1
             </p>
-            <h2 className="text-base font-bold text-gray-700">Enter Your Farm Details</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h2 className="text-base font-bold" style={{ color: 'var(--text-dark)' }}>
+              Enter Your Farm Details
+            </h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-light)' }}>
               All fields help improve recommendation accuracy
             </p>
           </div>
@@ -101,17 +112,20 @@ export default function Home() {
           <InputForm onSubmit={handleSubmit} />
         </div>
 
-        {/* ---- RIGHT COLUMN ---- */}
+        {/* Right column — cream canvas */}
         <div className="flex-1 overflow-y-auto p-8">
 
           {/* Empty state */}
           {!results && !loading && (
             <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="text-6xl mb-4">🌾</div>
-              <h2 className="text-xl font-semibold text-gray-600 mb-2">
+              <div className="text-6xl mb-4">🌿</div>
+              <h2
+                className="text-xl font-semibold mb-2"
+                style={{ color: 'var(--green-1)' }}
+              >
                 No results yet
               </h2>
-              <p className="text-gray-400 max-w-sm">
+              <p style={{ color: 'var(--text-light)' }} className="max-w-sm text-sm">
                 Fill in your farm details on the left and submit to see
                 your personalized drought adaptation recommendations.
               </p>
@@ -122,7 +136,10 @@ export default function Home() {
           {loading && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4 animate-bounce">💧</div>
-              <p className="text-gray-400 animate-pulse">
+              <p
+                className="animate-pulse text-sm"
+                style={{ color: 'var(--text-light)' }}
+              >
                 Calculating recommendations...
               </p>
             </div>
@@ -131,18 +148,18 @@ export default function Home() {
           {/* Results */}
           {results && !loading && (
             <div className="max-w-2xl">
-
-              {/* Suggestion 5 — severity banner + reset button sit together at the top */}
               <div className="flex items-start justify-between mb-2">
                 <SeverityBanner shortage={shortage} />
                 <button
                   onClick={handleReset}
-                  className="text-xs text-gray-400 hover:text-gray-600 underline shrink-0 ml-4 mt-1"
+                  className="text-xs underline shrink-0 ml-4 mt-1 transition-colors"
+                  style={{ color: 'var(--text-light)' }}
+                  onMouseOver={e => e.target.style.color = 'var(--green-1)'}
+                  onMouseOut={e => e.target.style.color = 'var(--text-light)'}
                 >
                   ↺ Start over
                 </button>
               </div>
-
               <FadeIn delay={0}>
                 <StrategyResults results={results} />
               </FadeIn>
@@ -152,7 +169,6 @@ export default function Home() {
               <FadeIn delay={300}>
                 <CropTable results={results} userCrops={userCrops} />
               </FadeIn>
-
             </div>
           )}
 
