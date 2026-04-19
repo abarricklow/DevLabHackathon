@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { CheckCircle, XCircle, AlertCircle, Droplets } from 'lucide-react'
 import Tooltip from './Tooltip'
 
 const ACTION_META = {
@@ -20,6 +20,12 @@ const ACTION_META = {
     colors: 'bg-red-100 text-red-700',
     rowBg: 'bg-red-50',
   },
+  consider_buying_water: {
+    label: 'Buy Water',
+    icon: <Droplets size={16} />,
+    colors: 'bg-blue-100 text-blue-700',
+    rowBg: 'bg-blue-50',
+  },
 }
 
 function getAction(acreagePct) {
@@ -29,28 +35,30 @@ function getAction(acreagePct) {
 }
 
 function AcreageBar({ pct }) {
+  const safePct = Math.max(0, Math.min(1, pct || 0))
   const color =
-    pct >= 0.85 ? 'bg-green-400' :
-    pct > 0 ? 'bg-yellow-400' :
-    'bg-red-300'
+    safePct >= 0.85 ? 'bg-green-400' :
+    safePct > 0     ? 'bg-yellow-400' :
+                      'bg-red-300'
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 bg-gray-200 rounded-full h-2">
         <div
           className={`h-2 rounded-full transition-all duration-700 ${color}`}
-          style={{ width: `${pct * 100}%` }}
+          style={{ width: `${safePct * 100}%` }}
         />
       </div>
       <span className="text-xs font-mono text-gray-500 w-10 text-right">
-        {pct === 0 ? '0%' : `${Math.round(pct * 100)}%`}
+        {Math.round(safePct * 100)}%
       </span>
     </div>
   )
 }
 
 function ActionBadge({ action }) {
-  const meta = ACTION_META[action]
+  // Fall back to 'reduce' if action isn't in our map
+  const meta = ACTION_META[action] || ACTION_META.reduce
   return (
     <span className={`
       inline-flex items-center gap-1 text-xs font-semibold
@@ -62,11 +70,12 @@ function ActionBadge({ action }) {
   )
 }
 
-function CropRow({ crop, acreagePct, userAcres }) {
-  const action = getAction(acreagePct)
-  const meta = ACTION_META[action]
+function CropRow({ crop, acreagePct, userAcres, action }) {
+  const displayAction = action || getAction(acreagePct)
+  const meta = ACTION_META[displayAction] || ACTION_META.reduce
+  const safePct = Math.max(0, Math.min(1, acreagePct || 0))
   const recommendedAcres = userAcres
-    ? Math.round(userAcres * acreagePct)
+    ? Math.round(userAcres * safePct)
     : null
 
   return (
@@ -79,16 +88,16 @@ function CropRow({ crop, acreagePct, userAcres }) {
       </td>
       <td className="py-3 px-4 text-sm text-right">
         {recommendedAcres !== null ? (
-          <span className={action === 'fallow' ? 'text-red-500 font-semibold' : 'text-gray-700'}>
+          <span className={displayAction === 'fallow' ? 'text-red-500 font-semibold' : 'text-gray-700'}>
             {recommendedAcres === 0 ? 'Fallow' : `${recommendedAcres.toLocaleString()} ac`}
           </span>
         ) : '—'}
       </td>
       <td className="py-3 px-4 min-w-[140px]">
-        <AcreageBar pct={acreagePct} />
+        <AcreageBar pct={safePct} />
       </td>
       <td className="py-3 px-4">
-        <ActionBadge action={action} />
+        <ActionBadge action={displayAction} />
       </td>
     </tr>
   )
@@ -98,13 +107,14 @@ function SummaryRow({ cropAdjustments, userCrops }) {
   const totalUserAcres = Object.values(userCrops || {}).reduce((a, b) => a + b, 0)
   const totalRecommended = cropAdjustments.reduce((sum, item) => {
     const userAcres = userCrops?.[item.crop] || 0
-    return sum + Math.round(userAcres * item.acreage_pct)
+    const safePct = Math.max(0, Math.min(1, item.acreage_pct || 0))
+    return sum + Math.round(userAcres * safePct)
   }, 0)
 
-  const fallowCount = cropAdjustments.filter(c => c.acreage_pct === 0).length
-  const maintainCount = cropAdjustments.filter(c => c.acreage_pct >= 0.85).length
-  const reduceCount = cropAdjustments.filter(
-    c => c.acreage_pct > 0 && c.acreage_pct < 0.85
+  const fallowCount  = cropAdjustments.filter(c => (c.acreage_pct || 0) === 0).length
+  const maintainCount = cropAdjustments.filter(c => (c.acreage_pct || 0) >= 0.85).length
+  const reduceCount  = cropAdjustments.filter(
+    c => (c.acreage_pct || 0) > 0 && (c.acreage_pct || 0) < 0.85
   ).length
 
   return (
@@ -135,15 +145,26 @@ function SummaryRow({ cropAdjustments, userCrops }) {
 }
 
 export default function CropTable({ results, userCrops }) {
-  if (!results?.crop_adjustments) return null
+  if (!results?.crop_adjustments?.length) return null
 
   const { crop_adjustments } = results
-  const sorted = [...crop_adjustments].sort((a, b) => b.acreage_pct - a.acreage_pct)
+
+  // Sort: maintain first, fallow last
+  const actionOrder = {
+    maintain: 0,
+    consider_buying_water: 1,
+    reduce: 2,
+    fallow: 3,
+  }
+
+  const sorted = [...crop_adjustments].sort((a, b) => {
+    const aAction = a.action || getAction(a.acreage_pct || 0)
+    const bAction = b.action || getAction(b.acreage_pct || 0)
+    return (actionOrder[aAction] ?? 4) - (actionOrder[bAction] ?? 4)
+  })
 
   return (
     <div className="mt-8">
-
-      {/* Section heading with tooltip */}
       <div className="flex items-center mb-1">
         <h2 className="text-xl font-bold text-gray-800">
           Crop Acreage Adjustments
@@ -161,25 +182,20 @@ export default function CropTable({ results, userCrops }) {
               <th className="py-3 px-4">Crop</th>
               <th className="py-3 px-4 text-right">Your Acres</th>
               <th className="py-3 px-4 text-right">Recommended</th>
-
-              {/* Retention column with tooltip */}
               <th className="py-3 px-4">
                 <div className="flex items-center gap-1">
                   Retention
                   <Tooltip text="The percentage of your normal acreage recommended under this shortage. 100% means no change, 0% means fallow the entire crop." />
                 </div>
               </th>
-
-              {/* Action column with tooltip */}
               <th className="py-3 px-4">
                 <div className="flex items-center gap-1">
                   Action
-                  <Tooltip text="Maintain means keep full acreage. Reduce means plant fewer acres. Fallow means skip this crop entirely this season." />
+                  <Tooltip text="Maintain: keep full acreage. Reduce: plant fewer acres. Fallow: skip this crop. Buy Water: purchasing water is economically worth it." />
                 </div>
               </th>
             </tr>
           </thead>
-
           <tbody>
             {sorted.map(item => (
               <CropRow
@@ -187,6 +203,7 @@ export default function CropTable({ results, userCrops }) {
                 crop={item.crop}
                 acreagePct={item.acreage_pct}
                 userAcres={userCrops?.[item.crop] || null}
+                action={item.action}
               />
             ))}
           </tbody>

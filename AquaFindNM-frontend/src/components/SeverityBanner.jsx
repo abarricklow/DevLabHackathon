@@ -1,9 +1,10 @@
 export default function SeverityBanner({ shortage }) {
-  if (!shortage) return null
+  if (shortage === null || shortage === undefined) return null
 
   const getSeverity = (pct) => {
     if (pct <= 10) return {
       label: 'Mild Shortage',
+      icon: '🟢',
       style: {
         backgroundColor: 'var(--green-4)',
         border: '1px solid var(--green-1)',
@@ -12,6 +13,7 @@ export default function SeverityBanner({ shortage }) {
     }
     if (pct <= 25) return {
       label: 'Moderate Shortage',
+      icon: '🟡',
       style: {
         backgroundColor: '#FEF9C3',
         border: '1px solid #CA8A04',
@@ -20,6 +22,7 @@ export default function SeverityBanner({ shortage }) {
     }
     if (pct <= 40) return {
       label: 'Severe Shortage',
+      icon: '🟠',
       style: {
         backgroundColor: '#FEF3C7',
         border: '1px solid #D97706',
@@ -28,6 +31,7 @@ export default function SeverityBanner({ shortage }) {
     }
     return {
       label: 'Critical Shortage',
+      icon: '🔴',
       style: {
         backgroundColor: '#FEE2E2',
         border: '1px solid #DC2626',

@@ -7,15 +7,7 @@ import IncomeChart from '../components/IncomeChart'
 import FadeIn from '../components/FadeIn'
 import SeverityBanner from '../components/SeverityBanner'
 
-// ─────────────────────────────────────────────────────
-// Transforms the rich backend response into the flat
-// shape that StrategyResults, IncomeChart, and CropTable
-// all expect. This keeps the components untouched.
-// ─────────────────────────────────────────────────────
 function transformResponse(data) {
-  // 1. Build income_preserved from strategy_comparison array
-  //    Backend uses: "unlimited" | "limited" | "none"
-  //    Frontend expects: "interdistrict" | "intradistrict" | "no_trade"
   const institutionMap = {
     unlimited: 'interdistrict',
     limited:   'intradistrict',
@@ -29,9 +21,7 @@ function transformResponse(data) {
   if (Array.isArray(data.strategy_comparison)) {
     data.strategy_comparison.forEach(s => {
       const frontendKey = institutionMap[s.institution] || s.institution
-      income_preserved[frontendKey] = Math.round(s.income_preserved_pct)
-
-      // The best strategy is the one with highest income preserved
+      income_preserved[frontendKey] = Math.round(s.income_preserved_pct * 10) / 10
       if (s.income_preserved_pct > highestPct) {
         highestPct = s.income_preserved_pct
         recommended_strategy = frontendKey
@@ -39,14 +29,21 @@ function transformResponse(data) {
     })
   }
 
-  // 2. Get shadow price — use the highest shadow price across
-  //    all crops from buy_vs_fallow as the headline figure
+  // Shadow price: use the equilibrium price from the current
+  // institution's strategy comparison rather than max across crops
+  // The unlimited trading equilibrium (~$68/acre-ft) is the most
+  // meaningful single number for farmers to understand water value
   let shadow_price = 0
   if (Array.isArray(data.buy_vs_fallow) && data.buy_vs_fallow.length > 0) {
-    shadow_price = Math.max(...data.buy_vs_fallow.map(b => b.shadow_price || 0))
+    // Use average shadow price across crops for a balanced headline figure
+    const validPrices = data.buy_vs_fallow
+      .map(b => b.shadow_price || 0)
+      .filter(p => p > 0)
+    if (validPrices.length > 0) {
+      shadow_price = validPrices.reduce((a, b) => a + b, 0) / validPrices.length
+    }
   }
 
-  // 3. Build buy water recommendation from headline or buy_vs_fallow
   const buy_crops = Array.isArray(data.buy_vs_fallow)
     ? data.buy_vs_fallow
         .filter(b => b.recommendation === 'buy_water')
@@ -55,20 +52,20 @@ function transformResponse(data) {
 
   const buy_water_recommendation = buy_crops.length > 0
     ? `Buying water is economically justified for: ${buy_crops.join(', ')}. ` +
-      `Current shadow price: $${shadow_price.toFixed(2)}/acre-ft. ` +
       `${data.headline_recommendation || ''}`
     : data.headline_recommendation ||
       `Under current conditions, fallowing low-value crops is more cost-effective than purchasing water at market rates.`
 
-  // 4. Build crop_adjustments from crop_recommendations
-  //    Backend gives recommended_acres and current_acres
-  //    Frontend expects acreage_pct (retention fraction)
   const crop_adjustments = Array.isArray(data.crop_recommendations)
     ? data.crop_recommendations.map(r => ({
         crop: r.crop,
+        // Store action directly so CropTable can use it
+        action: r.action,
         acreage_pct: r.current_acres > 0
-          ? Math.min(1, r.recommended_acres / r.current_acres)
+          ? Math.min(1, Math.max(0, r.recommended_acres / r.current_acres))
           : 0,
+        income_at_risk: r.income_at_risk || 0,
+        explanation: r.explanation || '',
       }))
     : []
 
@@ -78,9 +75,56 @@ function transformResponse(data) {
     shadow_price: Math.round(shadow_price * 100) / 100,
     buy_water_recommendation,
     crop_adjustments,
-    // pass through the raw data too in case you need it later
+    // Expose income summary for the headline card
+    total_baseline_income: data.total_baseline_income || 0,
+    estimated_income_loss: data.estimated_income_loss || 0,
+    income_preservation_pct: data.income_preservation_pct || 0,
+    headline_recommendation: data.headline_recommendation || '',
     _raw: data,
   }
+}
+
+// Headline income card shown at top of results
+function IncomeHeadline({ results, shortage }) {
+  if (!results.total_baseline_income) return null
+
+  const loss = results.estimated_income_loss || 0
+  const preserved = results.income_preservation_pct || 0
+  const baseline = results.total_baseline_income || 0
+
+  return (
+    <div
+      className="rounded-xl p-4 mb-6"
+      style={{
+        backgroundColor: 'var(--green-2)',
+        color: 'white',
+      }}
+    >
+      <p className="text-xs font-semibold uppercase tracking-widest mb-2 opacity-60">
+        Your Farm — {shortage}% Shortage Scenario
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <p className="text-2xl font-bold">
+            ${baseline.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+          <p className="text-xs opacity-60 mt-0.5">Baseline Income</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-red-300">
+            −${loss.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+          <p className="text-xs opacity-60 mt-0.5">Income at Risk</p>
+        </div>
+        <div>
+          <p className="text-2xl font-bold" style={{ color: 'var(--green-4)' }}>
+            {preserved.toFixed(1)}%
+          </p>
+          <p className="text-xs opacity-60 mt-0.5">Income Preserved</p>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 export default function Home() {
@@ -95,7 +139,6 @@ export default function Home() {
     setError(null)
     setShortage(farmData.shortage_pct)
 
-    // Build userCrops map for CropTable: { pecan: 500, alfalfa: 200 }
     const cropsMap = {}
     if (Array.isArray(farmData.crops)) {
       farmData.crops.forEach(({ crop, acres }) => {
@@ -106,16 +149,11 @@ export default function Home() {
 
     try {
       const raw = await getRecommendation(farmData)
-      console.log('Raw API response:', JSON.stringify(raw, null, 2))
-
       const transformed = transformResponse(raw)
-      console.log('Transformed response:', JSON.stringify(transformed, null, 2))
-
       setResults(transformed)
     } catch (err) {
       console.error('API error:', err)
-      console.error('Response data:', err.response?.data)
-      setError('Could not get recommendations. Make sure the backend is running.')
+      setError('Could not get recommendations. Make sure the backend is running at localhost:8000.')
     } finally {
       setLoading(false)
     }
@@ -147,7 +185,6 @@ export default function Home() {
             </p>
           </div>
         </div>
-
         <div
           className="text-xs font-semibold px-4 py-2 rounded-full transition-all"
           style={{
@@ -184,7 +221,6 @@ export default function Home() {
               All fields help improve recommendation accuracy
             </p>
           </div>
-
           <InputForm onSubmit={handleSubmit} />
         </div>
 
@@ -208,20 +244,17 @@ export default function Home() {
             </div>
           )}
 
-          {/* Loading state */}
+          {/* Loading */}
           {loading && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4 animate-bounce">💧</div>
-              <p
-                className="animate-pulse text-sm"
-                style={{ color: 'var(--text-light)' }}
-              >
+              <p className="animate-pulse text-sm" style={{ color: 'var(--text-light)' }}>
                 Calculating recommendations...
               </p>
             </div>
           )}
 
-          {/* Error state */}
+          {/* Error */}
           {error && !loading && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-5xl mb-4">⚠️</div>
@@ -251,6 +284,9 @@ export default function Home() {
                   ↺ Start over
                 </button>
               </div>
+
+              {/* Income headline — most important number first */}
+              <IncomeHeadline results={results} shortage={shortage} />
 
               <FadeIn delay={0}>
                 <CropTable results={results} userCrops={userCrops} />
