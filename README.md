@@ -26,6 +26,10 @@ how yall doing...
 - Node.js 18+
 - Python 3.11+
 
+### Environment Variables
+
+Create a `.env` file in the frontend directory:
+
 ### Frontend
 ```bash
 cd AquaFindNM-frontend
@@ -34,5 +38,14 @@ npm run dev
 ```
 
 Runs at `http://localhost:5173`
+
+### Backend
+```bash
+cd water_adapt/backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+Runs at  `http://localhost:5713`
 
   
