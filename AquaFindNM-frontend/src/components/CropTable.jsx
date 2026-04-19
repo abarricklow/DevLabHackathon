@@ -1,4 +1,5 @@
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const ACTION_META = {
   maintain: {
@@ -70,18 +71,12 @@ function CropRow({ crop, acreagePct, userAcres }) {
 
   return (
     <tr className={`border-t border-gray-100 ${meta.rowBg}`}>
-
-      {/* Crop name */}
       <td className="py-3 px-4">
         <span className="font-medium text-gray-800 capitalize">{crop}</span>
       </td>
-
-      {/* User acres if they entered them */}
       <td className="py-3 px-4 text-sm text-gray-500 text-right">
         {userAcres ? `${userAcres.toLocaleString()} ac` : '—'}
       </td>
-
-      {/* Recommended acres */}
       <td className="py-3 px-4 text-sm text-right">
         {recommendedAcres !== null ? (
           <span className={action === 'fallow' ? 'text-red-500 font-semibold' : 'text-gray-700'}>
@@ -89,17 +84,12 @@ function CropRow({ crop, acreagePct, userAcres }) {
           </span>
         ) : '—'}
       </td>
-
-      {/* Acreage retention bar */}
       <td className="py-3 px-4 min-w-[140px]">
         <AcreageBar pct={acreagePct} />
       </td>
-
-      {/* Action badge */}
       <td className="py-3 px-4">
         <ActionBadge action={action} />
       </td>
-
     </tr>
   )
 }
@@ -148,27 +138,45 @@ export default function CropTable({ results, userCrops }) {
   if (!results?.crop_adjustments) return null
 
   const { crop_adjustments } = results
-
-  // Sort: maintain first, then reduce, then fallow
   const sorted = [...crop_adjustments].sort((a, b) => b.acreage_pct - a.acreage_pct)
 
   return (
     <div className="mt-8">
-      <h2 className="text-xl font-bold text-gray-800 mb-1">Crop Acreage Adjustments</h2>
+
+      {/* Section heading with tooltip */}
+      <div className="flex items-center mb-1">
+        <h2 className="text-xl font-bold text-gray-800">
+          Crop Acreage Adjustments
+        </h2>
+        <Tooltip text="Shows how many acres of each crop to plant under your shortage scenario. Crops with higher income per acre-foot of water are prioritized." />
+      </div>
       <p className="text-sm text-gray-400 mb-4">
         Recommended acreage for each crop under your shortage scenario
       </p>
 
       <div className="rounded-xl border border-gray-200 overflow-hidden shadow-sm">
         <table className="w-full text-sm">
-
           <thead>
             <tr className="bg-gray-50 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
               <th className="py-3 px-4">Crop</th>
               <th className="py-3 px-4 text-right">Your Acres</th>
               <th className="py-3 px-4 text-right">Recommended</th>
-              <th className="py-3 px-4">Retention</th>
-              <th className="py-3 px-4">Action</th>
+
+              {/* Retention column with tooltip */}
+              <th className="py-3 px-4">
+                <div className="flex items-center gap-1">
+                  Retention
+                  <Tooltip text="The percentage of your normal acreage recommended under this shortage. 100% means no change, 0% means fallow the entire crop." />
+                </div>
+              </th>
+
+              {/* Action column with tooltip */}
+              <th className="py-3 px-4">
+                <div className="flex items-center gap-1">
+                  Action
+                  <Tooltip text="Maintain means keep full acreage. Reduce means plant fewer acres. Fallow means skip this crop entirely this season." />
+                </div>
+              </th>
             </tr>
           </thead>
 
@@ -182,7 +190,6 @@ export default function CropTable({ results, userCrops }) {
               />
             ))}
           </tbody>
-
         </table>
       </div>
 

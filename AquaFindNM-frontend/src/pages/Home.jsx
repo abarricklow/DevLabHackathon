@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { getRecommendation } from '../services/api'
 import InputForm from '../components/InputForm'
 import StrategyResults from '../components/StrategyResults'
 import CropTable from '../components/CropTable'
@@ -6,41 +7,115 @@ import IncomeChart from '../components/IncomeChart'
 import FadeIn from '../components/FadeIn'
 import SeverityBanner from '../components/SeverityBanner'
 
+// ─────────────────────────────────────────────────────
+// Transforms the rich backend response into the flat
+// shape that StrategyResults, IncomeChart, and CropTable
+// all expect. This keeps the components untouched.
+// ─────────────────────────────────────────────────────
+function transformResponse(data) {
+  // 1. Build income_preserved from strategy_comparison array
+  //    Backend uses: "unlimited" | "limited" | "none"
+  //    Frontend expects: "interdistrict" | "intradistrict" | "no_trade"
+  const institutionMap = {
+    unlimited: 'interdistrict',
+    limited:   'intradistrict',
+    none:      'no_trade',
+  }
+
+  const income_preserved = {}
+  let recommended_strategy = 'interdistrict'
+  let highestPct = -1
+
+  if (Array.isArray(data.strategy_comparison)) {
+    data.strategy_comparison.forEach(s => {
+      const frontendKey = institutionMap[s.institution] || s.institution
+      income_preserved[frontendKey] = Math.round(s.income_preserved_pct)
+
+      // The best strategy is the one with highest income preserved
+      if (s.income_preserved_pct > highestPct) {
+        highestPct = s.income_preserved_pct
+        recommended_strategy = frontendKey
+      }
+    })
+  }
+
+  // 2. Get shadow price — use the highest shadow price across
+  //    all crops from buy_vs_fallow as the headline figure
+  let shadow_price = 0
+  if (Array.isArray(data.buy_vs_fallow) && data.buy_vs_fallow.length > 0) {
+    shadow_price = Math.max(...data.buy_vs_fallow.map(b => b.shadow_price || 0))
+  }
+
+  // 3. Build buy water recommendation from headline or buy_vs_fallow
+  const buy_crops = Array.isArray(data.buy_vs_fallow)
+    ? data.buy_vs_fallow
+        .filter(b => b.recommendation === 'buy_water')
+        .map(b => b.crop)
+    : []
+
+  const buy_water_recommendation = buy_crops.length > 0
+    ? `Buying water is economically justified for: ${buy_crops.join(', ')}. ` +
+      `Current shadow price: $${shadow_price.toFixed(2)}/acre-ft. ` +
+      `${data.headline_recommendation || ''}`
+    : data.headline_recommendation ||
+      `Under current conditions, fallowing low-value crops is more cost-effective than purchasing water at market rates.`
+
+  // 4. Build crop_adjustments from crop_recommendations
+  //    Backend gives recommended_acres and current_acres
+  //    Frontend expects acreage_pct (retention fraction)
+  const crop_adjustments = Array.isArray(data.crop_recommendations)
+    ? data.crop_recommendations.map(r => ({
+        crop: r.crop,
+        acreage_pct: r.current_acres > 0
+          ? Math.min(1, r.recommended_acres / r.current_acres)
+          : 0,
+      }))
+    : []
+
+  return {
+    recommended_strategy,
+    income_preserved,
+    shadow_price: Math.round(shadow_price * 100) / 100,
+    buy_water_recommendation,
+    crop_adjustments,
+    // pass through the raw data too in case you need it later
+    _raw: data,
+  }
+}
+
 export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [userCrops, setUserCrops] = useState({})
+  const [error, setError] = useState(null)
   const [shortage, setShortage] = useState(null)
+  const [userCrops, setUserCrops] = useState({})
 
   const handleSubmit = async (farmData) => {
     setLoading(true)
-    setUserCrops(farmData.crops)
-    setShortage(farmData.shortage)
+    setError(null)
+    setShortage(farmData.shortage_pct)
+
+    // Build userCrops map for CropTable: { pecan: 500, alfalfa: 200 }
+    const cropsMap = {}
+    if (Array.isArray(farmData.crops)) {
+      farmData.crops.forEach(({ crop, acres }) => {
+        cropsMap[crop] = acres
+      })
+    }
+    setUserCrops(cropsMap)
+
     try {
-      const data = {
-        recommended_strategy: "interdistrict",
-        income_preserved: {
-          interdistrict: 92,
-          intradistrict: 87,
-          no_trade: 70
-        },
-        shadow_price: 58.14,
-        buy_water_recommendation:
-          "Buying water is worth it if you can source it under $58/acre-ft. Above that price, fallowing your lowest-value crops is the cheaper option.",
-        crop_adjustments: [
-          { crop: "pecan",   acreage_pct: 0.878 },
-          { crop: "alfalfa", acreage_pct: 0.617 },
-          { crop: "corn",    acreage_pct: 0.582 },
-          { crop: "wheat",   acreage_pct: 0.000 },
-          { crop: "peppers", acreage_pct: 0.924 },
-          { crop: "cotton",  acreage_pct: 0.464 },
-          { crop: "onions",  acreage_pct: 0.977 },
-        ]
-      }
-      // const data = await getRecommendation(farmData)
-      setResults(data)
+      const raw = await getRecommendation(farmData)
+      console.log('Raw API response:', JSON.stringify(raw, null, 2))
+
+      const transformed = transformResponse(raw)
+      console.log('Transformed response:', JSON.stringify(transformed, null, 2))
+
+      setResults(transformed)
     } catch (err) {
-      console.error(err)
+      console.error('API error:', err)
+      console.error('Response data:', err.response?.data)
+      setError('Could not get recommendations. Make sure the backend is running.')
     } finally {
       setLoading(false)
     }
@@ -48,14 +123,15 @@ export default function Home() {
 
   const handleReset = () => {
     setResults(null)
-    setUserCrops({})
+    setError(null)
     setShortage(null)
+    setUserCrops({})
   }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--cream)' }}>
 
-      {/* Header — dark green Starbucks bar */}
+      {/* Header */}
       <div
         className="px-8 py-4 flex items-center justify-between"
         style={{ backgroundColor: 'var(--green-2)' }}
@@ -66,10 +142,12 @@ export default function Home() {
             <h1 className="text-xl font-bold leading-tight text-white">
               WaterOptix
             </h1>
+            <p className="text-xs" style={{ color: 'var(--green-4)' }}>
+              Powered by NMSU Rio Grande Basin Research
+            </p>
           </div>
         </div>
 
-        {/* Status pill */}
         <div
           className="text-xs font-semibold px-4 py-2 rounded-full transition-all"
           style={{
@@ -84,7 +162,7 @@ export default function Home() {
       {/* Two column layout */}
       <div className="flex h-[calc(100vh-73px)]">
 
-        {/* Left column — slightly darker cream panel */}
+        {/* Left column */}
         <div
           className="w-[420px] shrink-0 overflow-y-auto p-6"
           style={{
@@ -92,7 +170,6 @@ export default function Home() {
             borderRight: '1px solid var(--cream-2)',
           }}
         >
-          {/* Form section label */}
           <div className="mb-5">
             <p
               className="text-xs font-semibold uppercase tracking-widest mb-1"
@@ -111,11 +188,11 @@ export default function Home() {
           <InputForm onSubmit={handleSubmit} />
         </div>
 
-        {/* Right column — cream canvas */}
+        {/* Right column */}
         <div className="flex-1 overflow-y-auto p-8">
 
           {/* Empty state */}
-          {!results && !loading && (
+          {!results && !loading && !error && (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="text-6xl mb-4">🌿</div>
               <h2
@@ -144,6 +221,21 @@ export default function Home() {
             </div>
           )}
 
+          {/* Error state */}
+          {error && !loading && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="text-5xl mb-4">⚠️</div>
+              <p className="text-sm text-red-500 max-w-sm">{error}</p>
+              <button
+                onClick={handleReset}
+                className="mt-4 text-xs underline"
+                style={{ color: 'var(--text-light)' }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
           {/* Results */}
           {results && !loading && (
             <div className="max-w-2xl">
@@ -159,14 +251,15 @@ export default function Home() {
                   ↺ Start over
                 </button>
               </div>
+
               <FadeIn delay={0}>
-                <StrategyResults results={results} />
+                <CropTable results={results} userCrops={userCrops} />
               </FadeIn>
               <FadeIn delay={150}>
-                <IncomeChart results={results} />
+                <StrategyResults results={results} />
               </FadeIn>
               <FadeIn delay={300}>
-                <CropTable results={results} userCrops={userCrops} />
+                <IncomeChart results={results} />
               </FadeIn>
             </div>
           )}
