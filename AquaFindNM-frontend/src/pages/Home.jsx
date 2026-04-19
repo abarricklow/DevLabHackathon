@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { getRecommendation } from '../services/api'    // make sure this path matches yours
+import { getRecommendation } from '../services/api'
 import InputForm from '../components/InputForm'
 import StrategyResults from '../components/StrategyResults'
 import CropTable from '../components/CropTable'
@@ -7,24 +7,114 @@ import IncomeChart from '../components/IncomeChart'
 import FadeIn from '../components/FadeIn'
 import SeverityBanner from '../components/SeverityBanner'
 
+// ─────────────────────────────────────────────────────
+// Transforms the rich backend response into the flat
+// shape that StrategyResults, IncomeChart, and CropTable
+// all expect. This keeps the components untouched.
+// ─────────────────────────────────────────────────────
+function transformResponse(data) {
+  // 1. Build income_preserved from strategy_comparison array
+  //    Backend uses: "unlimited" | "limited" | "none"
+  //    Frontend expects: "interdistrict" | "intradistrict" | "no_trade"
+  const institutionMap = {
+    unlimited: 'interdistrict',
+    limited:   'intradistrict',
+    none:      'no_trade',
+  }
+
+  const income_preserved = {}
+  let recommended_strategy = 'interdistrict'
+  let highestPct = -1
+
+  if (Array.isArray(data.strategy_comparison)) {
+    data.strategy_comparison.forEach(s => {
+      const frontendKey = institutionMap[s.institution] || s.institution
+      income_preserved[frontendKey] = Math.round(s.income_preserved_pct)
+
+      // The best strategy is the one with highest income preserved
+      if (s.income_preserved_pct > highestPct) {
+        highestPct = s.income_preserved_pct
+        recommended_strategy = frontendKey
+      }
+    })
+  }
+
+  // 2. Get shadow price — use the highest shadow price across
+  //    all crops from buy_vs_fallow as the headline figure
+  let shadow_price = 0
+  if (Array.isArray(data.buy_vs_fallow) && data.buy_vs_fallow.length > 0) {
+    shadow_price = Math.max(...data.buy_vs_fallow.map(b => b.shadow_price || 0))
+  }
+
+  // 3. Build buy water recommendation from headline or buy_vs_fallow
+  const buy_crops = Array.isArray(data.buy_vs_fallow)
+    ? data.buy_vs_fallow
+        .filter(b => b.recommendation === 'buy_water')
+        .map(b => b.crop)
+    : []
+
+  const buy_water_recommendation = buy_crops.length > 0
+    ? `Buying water is economically justified for: ${buy_crops.join(', ')}. ` +
+      `Current shadow price: $${shadow_price.toFixed(2)}/acre-ft. ` +
+      `${data.headline_recommendation || ''}`
+    : data.headline_recommendation ||
+      `Under current conditions, fallowing low-value crops is more cost-effective than purchasing water at market rates.`
+
+  // 4. Build crop_adjustments from crop_recommendations
+  //    Backend gives recommended_acres and current_acres
+  //    Frontend expects acreage_pct (retention fraction)
+  const crop_adjustments = Array.isArray(data.crop_recommendations)
+    ? data.crop_recommendations.map(r => ({
+        crop: r.crop,
+        acreage_pct: r.current_acres > 0
+          ? Math.min(1, r.recommended_acres / r.current_acres)
+          : 0,
+      }))
+    : []
+
+  return {
+    recommended_strategy,
+    income_preserved,
+    shadow_price: Math.round(shadow_price * 100) / 100,
+    buy_water_recommendation,
+    crop_adjustments,
+    // pass through the raw data too in case you need it later
+    _raw: data,
+  }
+}
+
 export default function Home() {
   const [results, setResults] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [shortage, setShortage] = useState(null)
+  const [userCrops, setUserCrops] = useState({})
 
   const handleSubmit = async (farmData) => {
     setLoading(true)
     setError(null)
     setShortage(farmData.shortage_pct)
 
+    // Build userCrops map for CropTable: { pecan: 500, alfalfa: 200 }
+    const cropsMap = {}
+    if (Array.isArray(farmData.crops)) {
+      farmData.crops.forEach(({ crop, acres }) => {
+        cropsMap[crop] = acres
+      })
+    }
+    setUserCrops(cropsMap)
+
     try {
-      // farmData is already in the exact shape the backend expects
-      // because InputForm now formats it correctly before calling onSubmit
-      const data = await getRecommendation(farmData)
-      setResults(data)
+      const raw = await getRecommendation(farmData)
+      console.log('Raw API response:', JSON.stringify(raw, null, 2))
+
+      const transformed = transformResponse(raw)
+      console.log('Transformed response:', JSON.stringify(transformed, null, 2))
+
+      setResults(transformed)
     } catch (err) {
       console.error('API error:', err)
+      console.error('Response data:', err.response?.data)
       setError('Could not get recommendations. Make sure the backend is running.')
     } finally {
       setLoading(false)
@@ -35,6 +125,7 @@ export default function Home() {
     setResults(null)
     setError(null)
     setShortage(null)
+    setUserCrops({})
   }
 
   return (
@@ -51,6 +142,9 @@ export default function Home() {
             <h1 className="text-xl font-bold leading-tight text-white">
               WaterOptix
             </h1>
+            <p className="text-xs" style={{ color: 'var(--green-4)' }}>
+              Powered by NMSU Rio Grande Basin Research
+            </p>
           </div>
         </div>
 
@@ -157,8 +251,9 @@ export default function Home() {
                   ↺ Start over
                 </button>
               </div>
+
               <FadeIn delay={0}>
-                <CropTable results={results} />
+                <CropTable results={results} userCrops={userCrops} />
               </FadeIn>
               <FadeIn delay={150}>
                 <StrategyResults results={results} />

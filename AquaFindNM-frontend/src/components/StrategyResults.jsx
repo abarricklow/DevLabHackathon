@@ -1,4 +1,5 @@
 import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import Tooltip from './Tooltip'
 
 const STRATEGY_META = {
   interdistrict: {
@@ -54,7 +55,6 @@ function StrategyCard({ strategy, incomePct, rank, isRecommended }) {
         backgroundColor: 'var(--cream)',
       }}
     >
-
       {/* Recommended badge */}
       {isRecommended && (
         <div
@@ -89,8 +89,11 @@ function StrategyCard({ strategy, incomePct, rank, isRecommended }) {
 
       {/* Income preserved bar */}
       <div className="mb-3">
-        <div className="flex justify-between text-sm mb-1">
-          <span style={{ color: 'var(--text-light)' }}>Income Preserved</span>
+        <div className="flex items-center justify-between text-sm mb-1">
+          <div className="flex items-center">
+            <span style={{ color: 'var(--text-light)' }}>Income Preserved</span>
+            <Tooltip text="The percentage of your total farm income retained under this strategy compared to a full water supply year." />
+          </div>
           <span className="font-bold" style={{ color: 'var(--text-dark)' }}>
             {incomePct}%
           </span>
@@ -123,12 +126,12 @@ function ShadowPriceCallout({ shadowPrice, buyRecommendation }) {
         border: '1px solid var(--green-1)',
       }}
     >
-      <h4
-        className="font-semibold mb-1"
-        style={{ color: 'var(--green-2)' }}
-      >
-         Should You Buy Water?
-      </h4>
+      <div className="flex items-center mb-1">
+        <h4 className="font-semibold" style={{ color: 'var(--green-2)' }}>
+          💧 Should You Buy Water?
+        </h4>
+        <Tooltip text="The shadow price is the maximum you should pay per acre-foot of water before it becomes cheaper to fallow that crop instead." />
+      </div>
       <p className="text-sm" style={{ color: 'var(--green-1)' }}>
         {buyRecommendation}
       </p>
@@ -156,16 +159,15 @@ export default function StrategyResults({ results }) {
 
   return (
     <div className="mt-8">
-      <h2
-        className="text-xl font-bold mb-1"
-        style={{ color: 'var(--text-dark)' }}
-      >
-        Recommended Strategies
-      </h2>
-      <p
-        className="text-sm mb-5"
-        style={{ color: 'var(--text-light)' }}
-      >
+
+      {/* Section heading with tooltip */}
+      <div className="flex items-center mb-1">
+        <h2 className="text-xl font-bold" style={{ color: 'var(--text-dark)' }}>
+          Recommended Strategies
+        </h2>
+        <Tooltip text="Strategies are ranked by how much farm income is preserved under your shortage level. The best option depends on what trading arrangements are legally available to you." />
+      </div>
+      <p className="text-sm mb-5" style={{ color: 'var(--text-light)' }}>
         Ranked by income preserved under your shortage scenario
       </p>
 
