@@ -11,7 +11,7 @@ Water scarcity is accelerating across the American Southwest. Farmers facing dro
 These decisions have massive income implications — yet most farmers make them without any structured economic guidance.
 
 ## Solution
-The WaterOptix translates peer-reviewed hydro-economic research
+WaterOptix translates peer-reviewed hydro-economic research
 from New Mexico State University into an accessible decision tool. A farmer
 enters four inputs:
 
